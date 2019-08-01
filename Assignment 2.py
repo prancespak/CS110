@@ -69,3 +69,162 @@ inlist = makelist(20)
 notinlist = makelist(20)
 
 general(0.1, inlist, notinlist)
+
+
+# TEST AND PLOTS
+import random
+import string
+
+#Implementation that takes out all the unnecessary things from the first implementation for the trials
+def main(n, p):
+    
+    bloom = BloomFilter(n, p)
+    return bloom.size
+
+def makelist(n): #function to make a list of random 6 letter strings
+    list = []
+    for i in range(n):
+        list.append(''.join(random.choice(string.ascii_lowercase) for i in range(6)))
+    return list
+
+inlist = makelist(20) #a list of strings that will be in the bloom filter
+notinlist = makelist(20) #a list of strings that will NOT be in the bloom filter
+                        #will count false positives with this
+
+###
+### TEST 1: memory size as a function of the false positive rate
+###
+
+testfpperc = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5] #false positive rates
+
+task1 = []
+for test in testfpperc: #for all the false positive rates above,
+    task1.append(main(20, test)) #run the main implementation with them
+
+%matplotlib inline
+#plot the results
+plt.plot(testfpperc,task1)
+plt.ylabel('Bitarray Size')
+plt.xlabel('False Positive Rate')
+plt.show()
+
+###
+### TEST 2: memory size as a function of the number of items stored
+###
+
+#list of the number of elements to put into the bitarray
+the_ns = [10, 50, 100, 150, 200, 250]
+task2 = []
+for ns in the_ns: #for the different values of n
+    task2.append(main(ns, 0.05)) #run them as input in the main function
+
+#plot the results
+plt.plot(the_ns,task2)
+plt.ylabel('Bitarray Size')
+plt.xlabel('Items Added')
+plt.show()
+
+
+###
+### TEST 3: access time as a function of the false positive rate
+###
+
+import time
+
+#an adapted version of the first implementation
+#it performs lookup, but doesn't do all the extra printing
+def adapted(p, inlist, notinlist):
+    n = len(inlist)
+    
+    bloom = BloomFilter(n, p)
+    
+    for element in inlist:
+        bloom.add(element)
+    
+    checkingwords = inlist + notinlist
+    shuffle(checkingwords)
+    
+    false_positives = 0
+    
+    for word in checkingwords:
+        if bloom.lookup(word) is True: 
+            if word in notinlist: 
+                false_positives += 1
+    return float(false_positives)/len(checkingwords)
+
+inlist = makelist(20)
+notinlist = makelist(20)
+
+#list of false positive rates
+fprates = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+accesstime = []
+for i in fprates: 
+    start_time = time.time()
+    adapted(i, inlist, notinlist) #run the general function with the false pos rates as input
+    accesstime.append(time.time() - start_time) #measure the time taken and add to the list
+
+#plot the results
+plt.plot(fprates,accesstime)
+plt.ylabel('Access Time')
+plt.xlabel('False Positive Rates')
+plt.show()
+
+
+###
+### TEST 4: access time as a function of the number of items stored
+###
+
+inlist = makelist(20)
+notinlist = makelist(20)
+
+#the different number of elements to add to the bitarray
+the_ns = [10, 50, 100, 150, 200, 250]
+accesstimes = []
+
+for i in the_ns:
+    start_time = time.time()
+    adapted(0.1, makelist(i), makelist(i)) #run the general function with the inputs
+    #standard probability of false pos of 0.1
+    accesstimes.append(time.time() - start_time) #record the times
+
+#plot the results
+plt.plot(the_ns,accesstimes)
+plt.ylabel('Access Time')
+plt.xlabel('Number of Inputs')
+plt.show()
+
+
+# produce a plot to show that your implementation's false positive
+# rate matches the theoretically expected rate.
+
+inlist = makelist(25)
+notinlist = makelist(25)
+
+#theoretical false positivee rates
+theoreticalrates = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5,]
+
+#function to get average
+def getaverage(p):
+    result = []
+    for i in range(50): #getting the average of actual false positives for 10 trials
+        result.append(adapted(p, inlist, notinlist))
+    return float(mean(result))
+
+#get the average of average, so that the results are more accurate
+def averageofaverage(p):
+    results = []
+    for i in range(50):
+        results.append(getaverage(p))
+    return float(mean(results))
+
+actualfp = [] #actual false positive rates
+
+#run the general function with the theoretical rates as inputs
+for i in range(0, 6):
+    actualfp.append(averageofaverage(theoreticalrates[i]))
+
+#plot the results
+plt.plot(theoreticalrates, actualfp)
+plt.ylabel('Actual FP Rates')
+plt.xlabel('Theoretical FP Rates')
+plt.show()
