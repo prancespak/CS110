@@ -1,3 +1,10 @@
+import math 
+import mmh3 
+from bitarray import bitarray 
+from statistics import mean
+import matplotlib.pyplot as plt
+from random import shuffle
+
 class BloomFilter(object): 
     #the way this implementation works is that the bloom filter uses the
     #functions in the wiki article to create the optimal bitarray size and
